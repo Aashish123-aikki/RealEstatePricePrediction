@@ -1,38 +1,51 @@
-import json
 import pickle
+import json
 import numpy as np
-__location=None
-__model=None
-__data_col=None
 
-def get_estimated_value(location,sqft,bhk):
+__locations = None
+__data_columns = None
+__model = None
+
+def get_estimated_price(location,sqft,bhk,):
     try:
-        loc_index=__data_col.index(location.lower())
+        loc_index = __data_columns.index(location.lower())
     except:
-        loc_index =-1
-    
-    x=np.zeros(len(__data_col))
-    x[0]=sqft
-    x[1]=bhk
+        loc_index = -1
+
+    x = np.zeros(len(__data_columns))
+    x[0] = sqft
+    x[1] = bhk
     if loc_index>=0:
-        x[loc_index]=1
+        x[loc_index] = 1
+
     return round(__model.predict([x])[0],2)
 
-def get_location_names():
-    return __location
 
-def load_artifacts():
-    print("loading artifacts")
-    global __data_col
-    global __location
+def load_saved_artifacts():
+    print("loading saved artifacts...start")
+    global  __data_columns
+    global __locations
+
+    with open('./server/artifacts/columns.json', 'r') as f:
+        __data_columns = json.load(f)['datacolmn']
+        __locations = __data_columns[3:]  # first 3 columns are sqft, bath, bhk
+
     global __model
-    with open('server/artifacts/columns.json','r') as f:
-        __data_col=json.load(f)['datacolmn']
-        __location=__data_col[2:]
-    with open('server/artifacts/banglurumodel.pickle','rb') as f:
-        __model=pickle.load(f)
-    print('artifacts load sucessfull')
-if __name__=='__main__':
-    load_artifacts()
+    if __model is None:
+        with open('./server/artifacts/banglurumodel.pickle', 'rb') as f:
+            __model = pickle.load(f)
+    print("loading saved artifacts...done")
+
+def get_location_names():
+    return __locations
+
+def get_data_columns():
+    return __data_columns
+
+if __name__ == '__main__':
+    load_saved_artifacts()
     print(get_location_names())
-    print(get_estimated_value('kalhalli',1000,2))
+    print(get_estimated_price('1st Phase JP Nagar',1000, 3))
+    print(get_estimated_price('1st Phase JP Nagar', 1000,  2))
+    print(get_estimated_price('Kalhalli', 1000.25, 2)) # other location
+    print(get_estimated_price('Ejipura', 1000,  2))  # other location
